@@ -22,6 +22,7 @@ from constants import (
     YES_STONE,
 )
 from gif_utils import load_gif_from_url, play_gif_popup, play_turn_banner
+from ui import draw_board
 
 
 class OthelloGame:
@@ -47,6 +48,7 @@ class OthelloGame:
         self.screen = screen
         self.font = font or pygame.font.Font(None, 36)
         self.gif_animation = None
+        self.needs_board_pause = False
         self._prepare_active_stone()
         self._schedule_ai_delay()
 
@@ -187,6 +189,7 @@ class OthelloGame:
         if result is False:
             self.running = False
             return False
+        self.needs_board_pause = True
         return True
 
     def _schedule_ai_delay(self):
@@ -202,10 +205,29 @@ class OthelloGame:
         """Show the YES/NO turn banner for 1.5 seconds."""
         if not (self.screen and self.running):
             return
+        if self.needs_board_pause:
+            self._pause_on_board(3.0)
+            self.needs_board_pause = False
         turn_text = self.player_name(self.current_side)
         result = play_turn_banner(self.screen, self.font, turn_text)
         if result is False:
             self.running = False
+
+    def _pause_on_board(self, seconds):
+        """Keep the standard board view on screen for a few seconds."""
+        if not self.screen:
+            pygame.time.wait(int(seconds * 1000))
+            return
+        clock = pygame.time.Clock()
+        end_time = pygame.time.get_ticks() + int(seconds * 1000)
+        while pygame.time.get_ticks() < end_time and self.running:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.running = False
+                    return
+            draw_board(self.screen, self, self.font)
+            pygame.display.flip()
+            clock.tick(60)
 
     def _prepare_active_stone(self):
         """Call the API to determine which stone can be placed on the upcoming turn."""
