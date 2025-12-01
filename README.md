@@ -5,7 +5,7 @@ The board still follows classic 8×8 Othello rules, but the stone you are allowe
 
 ## Requirements
 
-- Python 3.9+
+- Python 3.13
 - `pygame`
 - `numpy`
 - `requests`
