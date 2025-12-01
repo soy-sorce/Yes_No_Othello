@@ -1,0 +1,4 @@
+pygame
+numpy
+requests
+gif_pygame
