@@ -1,0 +1,26 @@
+BOARD_SIZE = 8
+CELL_SIZE = 60
+INFO_WIDTH = 200
+SCREEN_WIDTH = BOARD_SIZE * CELL_SIZE + INFO_WIDTH
+SCREEN_HEIGHT = BOARD_SIZE * CELL_SIZE
+
+EMPTY = 0
+YES_STONE = 1
+NO_STONE = 2
+DIRECTIONS = [(-1, -1), (-1, 0), (-1, 1),
+              (0, -1),         (0, 1),
+              (1, -1), (1, 0), (1, 1)]
+
+GREEN = (34, 139, 34)
+YES_COLOR = (0, 0, 0)
+NO_COLOR = (255, 255, 255)
+TEXT_COLOR = (255, 255, 255)
+BG_COLOR = (40, 40, 40)
+FLASH_COLOR = (255, 215, 0, 120)
+
+AI_NONE = 0
+AI_RANDOM = 1
+AI_MINIMAX = 2
+
+API_URL = "https://yesno.wtf/api"
+STONE_TO_TEXT = {YES_STONE: "YES", NO_STONE: "NO"}
