@@ -1,4 +1,4 @@
-pygame
-numpy
-requests
-gif_pygame
+pygame==2.6.1
+numpy==2.3.4
+requests==2.32.5
+gif_pygame==1.2.0
