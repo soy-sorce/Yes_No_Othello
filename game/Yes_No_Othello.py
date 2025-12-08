@@ -37,6 +37,7 @@ def select_gif_mode():
 
 def create_font():
     """Load the preferred font, falling back to pygame's default if unavailable."""
+    # I think this function is not necessary, but oh well
     try:
         return pygame.font.Font("/usr/share/fonts/opentype/ipafont-gothic/ipagp.ttf", 20)
     except Exception:
@@ -50,7 +51,7 @@ def main():
     pygame.display.set_caption("Yes/No Othello")
     font = create_font()
     ai_type = select_ai_mode()
-    show_gifs = select_gif_mode()
+    show_gifs = select_gif_mode() # Prompt for GIF mode
     game = OthelloGame(ai_type=ai_type, show_gifs=show_gifs, screen=screen, font=font)
 
     clock = pygame.time.Clock()
@@ -74,8 +75,9 @@ def main():
         clock.tick(60)
 
     print(game.get_winner())
-    pygame.quit()
+    pygame.quit() 
 
 
 if __name__ == "__main__":
+    # Entry point for the application
     main()

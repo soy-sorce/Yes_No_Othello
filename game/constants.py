@@ -1,16 +1,17 @@
-BOARD_SIZE = 8
+BOARD_SIZE = 8 # Othello board is 8x8
 CELL_SIZE = 60
 INFO_WIDTH = 200
 SCREEN_WIDTH = BOARD_SIZE * CELL_SIZE + INFO_WIDTH
 SCREEN_HEIGHT = BOARD_SIZE * CELL_SIZE
 
-EMPTY = 0
+EMPTY = 0 # Empty cell
 YES_STONE = 1
 NO_STONE = 2
 DIRECTIONS = [(-1, -1), (-1, 0), (-1, 1),
               (0, -1),         (0, 1),
               (1, -1), (1, 0), (1, 1)]
 
+# colors in RGB format
 GREEN = (34, 139, 34)
 YES_COLOR = (0, 0, 0)
 NO_COLOR = (255, 255, 255)
@@ -22,5 +23,5 @@ AI_NONE = 0
 AI_RANDOM = 1
 AI_MINIMAX = 2
 
-API_URL = "https://yesno.wtf/api"
+API_URL = "https://yesno.wtf/api" # API endpoint for yes/no answers (this is the most important for this game!!!!)
 STONE_TO_TEXT = {YES_STONE: "YES", NO_STONE: "NO"}

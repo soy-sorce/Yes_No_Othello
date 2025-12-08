@@ -24,6 +24,7 @@ def draw_board(screen, game, font):
     """Render the grid, stones, and status panel."""
     screen.fill(GREEN)
     for i in range(1, BOARD_SIZE):
+        # Draw grid lines
         pygame.draw.line(screen, YES_COLOR, (i * CELL_SIZE, 0), (i * CELL_SIZE, SCREEN_HEIGHT), 2)
         pygame.draw.line(screen, YES_COLOR, (0, i * CELL_SIZE), (SCREEN_HEIGHT, i * CELL_SIZE), 2)
 
@@ -36,7 +37,7 @@ def draw_board(screen, game, font):
                 pygame.draw.circle(screen, NO_COLOR, center, CELL_SIZE // 2 - 5)
 
     info_rect = pygame.Rect(BOARD_SIZE * CELL_SIZE, 0, INFO_WIDTH, SCREEN_HEIGHT)
-    pygame.draw.rect(screen, BG_COLOR, info_rect)
+    pygame.draw.rect(screen, BG_COLOR, info_rect) # Info panel background
     yes_score, no_score = game.get_scores()
     screen.blit(font.render(f"YES: {yes_score}", True, TEXT_COLOR), (BOARD_SIZE * CELL_SIZE + 15, 30))
     screen.blit(font.render(f"NO : {no_score}", True, TEXT_COLOR), (BOARD_SIZE * CELL_SIZE + 15, 70))
@@ -47,8 +48,10 @@ def draw_board(screen, game, font):
     for idx, line in enumerate(wrap_text(game.status_message, font, INFO_WIDTH - 30)):
         screen.blit(font.render(line, True, TEXT_COLOR), (BOARD_SIZE * CELL_SIZE + 15, 250 + idx * 28))
     if game.awaiting_api:
+        # Indicate waiting for API
         screen.blit(font.render("Fetching result...", True, TEXT_COLOR), (BOARD_SIZE * CELL_SIZE + 15, 340))
     if game.maybe_flash_ticks > 0:
+        # Flash overlay to indicate recent change
         overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
         overlay.fill(FLASH_COLOR)
         screen.blit(overlay, (0, 0))
