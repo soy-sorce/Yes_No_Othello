@@ -3,6 +3,11 @@
 import io
 import pygame
 import requests
+
+# gif_pygame expects pygame-ce's FRect type; provide a noop placeholder for vanilla pygame.
+if not hasattr(pygame, "FRect"):
+    pygame.FRect = pygame.Rect
+
 from gif_pygame import load as load_gif, transform as gif_transform
 
 from constants import SCREEN_WIDTH, SCREEN_HEIGHT, BG_COLOR, TEXT_COLOR

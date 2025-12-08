@@ -6,7 +6,7 @@ The board still follows classic 8×8 Othello rules, but the stone you are allowe
 ## Requirements
 
 - Python 3.12+
-- `pygame`
+- `pygame-ce`
 - `numpy`
 - `requests`
 - `gif_pygame`
@@ -16,7 +16,7 @@ Install dependencies:
 ```bash
 pip install -r requirements.txt
 # or manually:
-pip install pygame numpy requests gif_pygame
+pip install pygame-ce numpy requests gif_pygame
 ```
 
 ## Running the game
