@@ -22,8 +22,8 @@ def load_gif_from_url(url, enabled):
         if not response.ok:
             return None
         buffer = io.BytesIO(response.content)
-        gif = load_gif(buffer, loops=-1)
-        _fit_gif_to_screen(gif)
+        gif = load_gif(buffer, loops=-1) # Loop indefinitely
+        _fit_gif_to_screen(gif) # Resize to fit screen
         return gif
     except Exception:
         return None
@@ -33,7 +33,7 @@ def play_gif_popup(screen, font, gif, answer_text, turn_text):
     """Display the animated GIF overlay until the player dismisses it."""
     if not gif or not screen:
         return
-    pygame.time.wait(500)
+    pygame.time.wait(200) # Brief pause before showing GIF
     gif.reset()
     title = font.render(f"API says: {answer_text.upper()}", True, TEXT_COLOR)
     turn_label = font.render(f"Turn: {turn_text}", True, TEXT_COLOR)
@@ -45,6 +45,7 @@ def play_gif_popup(screen, font, gif, answer_text, turn_text):
     clock = pygame.time.Clock()
     while waiting:
         for event in pygame.event.get():
+            # Handle quit or click to dismiss
             if event.type == pygame.QUIT:
                 waiting = False
                 return False
@@ -74,7 +75,7 @@ def play_turn_banner(screen, font, player_text, duration=1.5):
     title_rect = banner_message.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 20))
     sub_rect = sub_message.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 30))
     target_ms = duration * 1000
-    start = pygame.time.get_ticks()
+    start = pygame.time.get_ticks() # Start time
     while pygame.time.get_ticks() - start < target_ms:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -90,6 +91,7 @@ def play_turn_banner(screen, font, player_text, duration=1.5):
 def _fit_gif_to_screen(gif):
     """Resize GIF frames so they fit comfortably inside the overlay."""
     if not gif.frames:
+        # No frames to resize
         return
     width, height = gif.frames[0][0].get_size()
     max_width = SCREEN_WIDTH - 80

@@ -54,10 +54,10 @@ class OthelloGame:
 
     def is_valid_move(self, row, col, stone=None):
         """Return True if placing `stone` at (row, col) would capture an opponent stone."""
-        stone = stone if stone is not None else self.current_side
+        stone = stone if stone is not None else self.current_side # Use current side if none provided
         if stone is None or self.board[row, col] != EMPTY:
             return False
-        for dr, dc in DIRECTIONS:
+        for dr, dc in DIRECTIONS: # Check all 8 directions
             if self._can_flip(row, col, dr, dc, stone):
                 return True
         return False
@@ -65,9 +65,10 @@ class OthelloGame:
     def _can_flip(self, row, col, dr, dc, stone):
         """Check a single direction to see whether flips are possible."""
         opponent = self._opponent(stone)
-        r, c = row + dr, col + dc
+        r, c = row + dr, col + dc # Move one step in the direction
         flipped = False
         while 0 <= r < BOARD_SIZE and 0 <= c < BOARD_SIZE and self.board[r, c] == opponent:
+            # Continue moving in the direction
             r += dr
             c += dc
             flipped = True
@@ -78,6 +79,7 @@ class OthelloGame:
     def place_piece(self, row, col):
         """Attempt to place the active stone and advance the turn if successful."""
         if self.awaiting_api or not self.is_valid_move(row, col, self.current_side):
+            # Invalid move or waiting for API response
             return False
         if not self._maybe_show_gif_popup():
             return False
@@ -85,12 +87,14 @@ class OthelloGame:
         owner = self.current_side
         self.board[row, col] = stone
         if stone == owner:
+            # Flip opponent pieces in all directions
             for dr, dc in DIRECTIONS:
                 self._flip_pieces(row, col, dr, dc, stone)
             self.status_message = f"API result: {STONE_TO_TEXT.get(stone, '-')}"
         else:
             self.status_message = f"Cannot flip due to API result: {STONE_TO_TEXT.get(stone, '-')}"
         if self.last_answer == "maybe":
+            # Special events are to happen for MAYBE !!!!!!!!!!!!!!!!!!
             self._apply_maybe_event(row, col, stone)
         self.pass_count = 0
         self._advance_turn()
@@ -102,6 +106,7 @@ class OthelloGame:
         r, c = row + dr, col + dc
         to_flip = []
         while 0 <= r < BOARD_SIZE and 0 <= c < BOARD_SIZE and self.board[r, c] == opponent:
+            # Continue moving in the direction
             to_flip.append((r, c))
             r += dr
             c += dc
@@ -139,8 +144,9 @@ class OthelloGame:
         if self.ai_player != self.current_side or self.awaiting_api or not self.running:
             return
         if self.ai_ready_time is None:
-            self._schedule_ai_delay()
+            self._schedule_ai_delay() # Ensure delay is scheduled
         if self.ai_ready_time is not None and time.time() < self.ai_ready_time:
+            # Not ready yet
             return
         self.ai_ready_time = None
         moves = self.get_valid_moves()
@@ -161,11 +167,11 @@ class OthelloGame:
             self.running = False
             self.status_message = "Board is full"
             return
-        self.current_side = self._opponent(self.current_side)
-        self._prepare_active_stone()
-        self._schedule_ai_delay()
+        self.current_side = self._opponent(self.current_side) # Switch sides
+        self._prepare_active_stone() # Fetch ner API stone
+        self._schedule_ai_delay() # Schedule AI move if needed
         if not self.get_valid_moves():
-            self._handle_pass()
+            self._handle_pass() # Handle pass if no moves available
 
     def _handle_pass(self):
         """Handle pass turns, ending the game if both players must pass."""
@@ -174,18 +180,18 @@ class OthelloGame:
         if self.pass_count >= 2 or not np.any(self.board == EMPTY):
             self.running = False
             return
-        self.current_side = self._opponent(self.current_side)
-        self._prepare_active_stone()
-        self._schedule_ai_delay()
+        self.current_side = self._opponent(self.current_side) # Switch sides
+        self._prepare_active_stone() # Fetch new API stone
+        self._schedule_ai_delay() # Schedule AI move if needed
         if not self.get_valid_moves():
-            self._handle_pass()
+            self._handle_pass() # Handle pass if no moves available
 
     def _maybe_show_gif_popup(self):
         """Display the yesno.wtf GIF if enabled, returning False if the window was closed."""
         if not (self.show_gifs and self.screen and self.gif_animation is not None and self.running):
             return True
         turn_label = self.player_name(self.current_side)
-        result = play_gif_popup(self.screen, self.font, self.gif_animation, self.last_answer, turn_label)
+        result = play_gif_popup(self.screen, self.font, self.gif_animation, self.last_answer, turn_label) # show gif here.
         if result is False:
             self.running = False
             return False
@@ -195,7 +201,7 @@ class OthelloGame:
     def _schedule_ai_delay(self):
         """Randomize a 'thinking' delay before the AI is allowed to move."""
         if self.ai_player == self.current_side and self.running:
-            delay = random.uniform(0.5, 3.0)
+            delay = random.uniform(0.5, 3.0) # it seems that the AI is thinking about their next action.
             self.ai_ready_time = time.time() + delay
             self.status_message = f"Opponent is thinking... (API: {self.last_answer.upper()})"
         else:
@@ -218,8 +224,8 @@ class OthelloGame:
         if not self.screen:
             pygame.time.wait(int(seconds * 1000))
             return
-        clock = pygame.time.Clock()
-        end_time = pygame.time.get_ticks() + int(seconds * 1000)
+        clock = pygame.time.Clock() # Limit to 60 FPS
+        end_time = pygame.time.get_ticks() + int(seconds * 1000) # Calculate end time
         while pygame.time.get_ticks() < end_time and self.running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -237,10 +243,11 @@ class OthelloGame:
         self.awaiting_api = True
         self.status_message = f"Fetching API result for {self.player_name(self.current_side)}..."
         if pygame.display.get_init():
+            # Update display to show fetching status
             pygame.display.flip()
         answer, image_url = self._fetch_api_answer()
         self.awaiting_api = False
-        pygame.event.get(pygame.MOUSEBUTTONDOWN)
+        pygame.event.get(pygame.MOUSEBUTTONDOWN) # Clear any pending input events
         self.last_answer = answer
         self.gif_animation = load_gif_from_url(image_url, self.show_gifs)
         if answer == "maybe":
@@ -311,8 +318,9 @@ class OthelloGame:
         placed = self.active_stone
         temp_board = np.copy(self.board)
         row, col = move
-        temp_board[row, col] = placed
+        temp_board[row, col] = placed # Place the stone
         if placed == intended:
+            # Flip opponent pieces in all directions
             opponent = self._opponent(intended)
             for dr, dc in DIRECTIONS:
                 r, c = row + dr, col + dc
@@ -325,6 +333,7 @@ class OthelloGame:
                     for rr, cc in captured:
                         temp_board[rr, cc] = intended
             if self.last_answer == "maybe":
+                # special handling for MAYBE
                 for dr in (-1, 0, 1):
                     for dc in (-1, 0, 1):
                         if dr == 0 and dc == 0:
