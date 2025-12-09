@@ -13,12 +13,13 @@ from gif_pygame import load as load_gif, transform as gif_transform
 from constants import SCREEN_WIDTH, SCREEN_HEIGHT, BG_COLOR, TEXT_COLOR
 
 
-def load_gif_from_url(url, enabled):
+def load_gif_from_url(url, enabled, session=None):
     """Download and prepare a GIF animation if overlays are enabled."""
     if not (enabled and url):
         return None
     try:
-        response = requests.get(url, timeout=4)
+        getter = session.get if session is not None else requests.get
+        response = getter(url, timeout=4)
         if not response.ok:
             return None
         buffer = io.BytesIO(response.content)
@@ -33,7 +34,7 @@ def play_gif_popup(screen, font, gif, answer_text, turn_text):
     """Display the animated GIF overlay until the player dismisses it."""
     if not gif or not screen:
         return
-    pygame.time.wait(200) # Brief pause before showing GIF
+    pygame.time.wait(2000) # Wait roughly 2 seconds before showing GIF
     gif.reset()
     title = font.render(f"API says: {answer_text.upper()}", True, TEXT_COLOR)
     turn_label = font.render(f"Turn: {turn_text}", True, TEXT_COLOR)
@@ -45,6 +46,9 @@ def play_gif_popup(screen, font, gif, answer_text, turn_text):
     clock = pygame.time.Clock()
     while waiting:
         for event in pygame.event.get():
+            if event.type >= pygame.USEREVENT:
+                pygame.event.post(event)  # Keep custom events (API results, etc.) alive.
+                continue
             # Handle quit or click to dismiss
             if event.type == pygame.QUIT:
                 waiting = False
@@ -60,7 +64,7 @@ def play_gif_popup(screen, font, gif, answer_text, turn_text):
         gif.render(screen, img_rect.topleft)
         screen.blit(instruction, instruction_rect)
         pygame.display.flip()
-        clock.tick(30)
+        clock.tick(60)
     return True
 
 
@@ -78,6 +82,9 @@ def play_turn_banner(screen, font, player_text, duration=1.5):
     start = pygame.time.get_ticks() # Start time
     while pygame.time.get_ticks() - start < target_ms:
         for event in pygame.event.get():
+            if event.type >= pygame.USEREVENT:
+                pygame.event.post(event)
+                continue
             if event.type == pygame.QUIT:
                 return False
         screen.fill(BG_COLOR)

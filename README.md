@@ -1,7 +1,7 @@
 # Yes/No Othello
 
 A goofy take on Othello/Reversi where every turn is affected by the [yesno.wtf](https://yesno.wtf) API.  
-The board still follows classic 8×8 Othello rules, but the stone you are allowed to place depends on a random YES/NO/MAYBE result fetched from the API.
+The board still follows classic 8×8 Othello rules, but the stone you are allowed to place depends on a random YES/NO/MAYBE result fetched from the API. Each piece now renders its `YES`/`NO` text directly on top (white text on black stones, black text on white stones) so you can instantly tell which side the API assigned you.
 
 ## Requirements
 

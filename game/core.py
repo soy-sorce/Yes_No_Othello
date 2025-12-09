@@ -1,7 +1,9 @@
 """Core gameplay logic, API interaction, and AI helpers for Yes/No Othello."""
 
 import random
+import threading
 import time
+from queue import Empty, Queue
 
 import numpy as np
 import pygame
@@ -23,6 +25,8 @@ from constants import (
 )
 from gif_utils import load_gif_from_url, play_gif_popup, play_turn_banner
 from ui import draw_board
+
+API_RESULT_EVENT = pygame.USEREVENT + 1
 
 
 class OthelloGame:
@@ -49,6 +53,11 @@ class OthelloGame:
         self.font = font or pygame.font.Font(None, 36)
         self.gif_animation = None
         self.needs_board_pause = False
+        # Cache API/GIF results per side so the next turn can start immediately.
+        self.prefetched_results = {YES_STONE: None, NO_STONE: None}
+        self.fetching_for = None # Track which side currently has an in-flight request.
+        self.http_session = requests.Session() # Reuse HTTP connections between requests.
+        self.pending_results = Queue() # Thread-safe queue for fallback result delivery.
         self._prepare_active_stone()
         self._schedule_ai_delay()
 
@@ -212,7 +221,7 @@ class OthelloGame:
         if not (self.screen and self.running):
             return
         if self.needs_board_pause:
-            self._pause_on_board(3.0)
+            self._pause_on_board(3)
             self.needs_board_pause = False
         turn_text = self.player_name(self.current_side)
         result = play_turn_banner(self.screen, self.font, turn_text)
@@ -228,6 +237,9 @@ class OthelloGame:
         end_time = pygame.time.get_ticks() + int(seconds * 1000) # Calculate end time
         while pygame.time.get_ticks() < end_time and self.running:
             for event in pygame.event.get():
+                if event.type >= pygame.USEREVENT:
+                    pygame.event.post(event)
+                    continue
                 if event.type == pygame.QUIT:
                     self.running = False
                     return
@@ -240,16 +252,70 @@ class OthelloGame:
         if not self.running:
             self.active_stone = None
             return
+        side = self.current_side
+        cached = self.prefetched_results.get(side)
+        if cached:
+            # Prefetched data exists, consume immediately without network wait.
+            self.prefetched_results[side] = None
+            self.awaiting_api = False
+            self._finalize_active_stone(*cached)
+            return
+        if self.fetching_for == side:
+            self.awaiting_api = True
+            self.status_message = f"Waiting for API result for {self.player_name(side)}..."
+            return
         self.awaiting_api = True
-        self.status_message = f"Fetching API result for {self.player_name(self.current_side)}..."
+        self.status_message = f"Fetching API result for {self.player_name(side)}..."
         if pygame.display.get_init():
             # Update display to show fetching status
             pygame.display.flip()
+        self._start_fetch_thread(side)
+
+    def _start_fetch_thread(self, side):
+        """Launch a background worker to retrieve the API response for `side`."""
+        if self.fetching_for == side:
+            return
+        self.fetching_for = side
+        threading.Thread(target=self._async_fetch_active_stone, args=(side,), daemon=True).start()
+
+    def _async_fetch_active_stone(self, side):
+        """Fetch API/GIF data on a background thread and notify the main loop."""
         answer, image_url = self._fetch_api_answer()
-        self.awaiting_api = False
+        gif = load_gif_from_url(image_url, self.show_gifs, session=self.http_session)
+        try:
+            pygame.event.post(
+                pygame.event.Event(API_RESULT_EVENT, {"answer": answer, "gif": gif, "side": side})
+            )
+        except pygame.error:
+            # Posting can fail if pygame is shutting down; queue for main thread processing.
+            self.pending_results.put((answer, gif, side))
+
+    def handle_api_result(self, answer, gif, side):
+        """Apply API/GIF results once the background fetch completes."""
+        if not self.running:
+            return
+        if self.fetching_for == side:
+            self.fetching_for = None
+        if self.awaiting_api and side == self.current_side:
+            self.awaiting_api = False
+            self._finalize_active_stone(answer, gif)
+        else:
+            self.prefetched_results[side] = (answer, gif)
+
+    def process_pending_results(self):
+        """Process queued API results if event posting failed earlier."""
+        while True:
+            try:
+                answer, gif, side = self.pending_results.get_nowait()
+            except Empty:
+                break
+            self.handle_api_result(answer, gif, side)
+
+    def _finalize_active_stone(self, answer, gif):
+        """Finalize API state for the active player and trigger UI cues."""
         pygame.event.get(pygame.MOUSEBUTTONDOWN) # Clear any pending input events
         self.last_answer = answer
-        self.gif_animation = load_gif_from_url(image_url, self.show_gifs)
+        self.gif_animation = gif
         if answer == "maybe":
             self.active_stone = self.current_side
             self.maybe_flash_ticks = 30
@@ -266,6 +332,18 @@ class OthelloGame:
             self.active_stone = random.choice([YES_STONE, NO_STONE])
             self.status_message = "API result unclear → random pick"
         self._show_turn_banner()
+        self._prefetch_for_next_player()
+
+    def _prefetch_for_next_player(self):
+        """Begin fetching the next player's API result if nothing is cached."""
+        if not self.running:
+            return
+        next_side = self._opponent(self.current_side)
+        if self.prefetched_results.get(next_side) is not None:
+            return
+        if self.fetching_for == next_side:
+            return
+        self._start_fetch_thread(next_side)
 
     def _apply_maybe_event(self, row, col, placed_stone):
         """Resolve the MAYBE result by flipping all adjacent opponent stones."""
@@ -281,7 +359,7 @@ class OthelloGame:
     def _fetch_api_answer(self):
         """Query yesno.wtf and return the answer text plus the GIF URL."""
         try:
-            response = requests.get(API_URL, timeout=2)
+            response = self.http_session.get(API_URL, timeout=2)
             if response.ok:
                 data = response.json()
                 answer = data.get("answer", "yes").lower()
@@ -298,6 +376,13 @@ class OthelloGame:
     def player_name(self, stone):
         """Return a user-friendly string for the provided stone constant."""
         return STONE_TO_TEXT.get(stone, "-")
+
+    def close(self):
+        """Release network resources held by this game instance."""
+        try:
+            self.http_session.close()
+        except Exception:
+            pass
 
     def _minimax_move(self, moves):
         """Evaluate moves with a simple greedy heuristic."""
