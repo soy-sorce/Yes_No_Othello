@@ -11,7 +11,7 @@ from constants import (
     SCREEN_HEIGHT,
     SCREEN_WIDTH,
 )
-from core import OthelloGame
+from core import API_RESULT_EVENT, OthelloGame
 from ui import draw_board
 
 
@@ -60,9 +60,12 @@ def main():
             game.ai_move()
         draw_board(screen, game, font)
         pygame.display.flip()
+        game.process_pending_results()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 game.running = False
+            elif event.type == API_RESULT_EVENT:
+                game.handle_api_result(event.answer, event.gif, event.side)
             elif (
                 event.type == pygame.MOUSEBUTTONDOWN
                 and game.current_side != game.ai_player
@@ -75,6 +78,7 @@ def main():
         clock.tick(60)
 
     print(game.get_winner())
+    game.close()
     pygame.quit() 
 
 
