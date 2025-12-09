@@ -28,13 +28,13 @@ def draw_board(screen, game, font):
         pygame.draw.line(screen, YES_COLOR, (i * CELL_SIZE, 0), (i * CELL_SIZE, SCREEN_HEIGHT), 2)
         pygame.draw.line(screen, YES_COLOR, (0, i * CELL_SIZE), (SCREEN_HEIGHT, i * CELL_SIZE), 2)
 
+    # Dedicated font keeps the YES/NO overlay sized for the stone diameter.
+    piece_font = pygame.font.Font(None, max(18, CELL_SIZE // 2))
     for r in range(BOARD_SIZE):
         for c in range(BOARD_SIZE):
-            center = (c * CELL_SIZE + CELL_SIZE // 2, r * CELL_SIZE + CELL_SIZE // 2)
-            if game.board[r, c] == YES_STONE:
-                pygame.draw.circle(screen, YES_COLOR, center, CELL_SIZE // 2 - 5)
-            elif game.board[r, c] == NO_STONE:
-                pygame.draw.circle(screen, NO_COLOR, center, CELL_SIZE // 2 - 5)
+            stone = game.board[r, c]
+            if stone in (YES_STONE, NO_STONE):
+                draw_piece(screen, (c, r), stone, piece_font)
 
     info_rect = pygame.Rect(BOARD_SIZE * CELL_SIZE, 0, INFO_WIDTH, SCREEN_HEIGHT)
     pygame.draw.rect(screen, BG_COLOR, info_rect) # Info panel background
@@ -56,6 +56,20 @@ def draw_board(screen, game, font):
         overlay.fill(FLASH_COLOR)
         screen.blit(overlay, (0, 0))
         game.maybe_flash_ticks -= 1
+
+
+def draw_piece(screen, cell_pos, stone, piece_font):
+    """Draw a single stone with its YES/NO label centered on top."""
+    c, r = cell_pos
+    center = (c * CELL_SIZE + CELL_SIZE // 2, r * CELL_SIZE + CELL_SIZE // 2)
+    radius = CELL_SIZE // 2 - 5
+    fill_color = YES_COLOR if stone == YES_STONE else NO_COLOR
+    text_color = NO_COLOR if stone == YES_STONE else YES_COLOR
+    pygame.draw.circle(screen, fill_color, center, radius)
+    text = STONE_TO_TEXT[stone]
+    text_surface = piece_font.render(text, True, text_color)
+    text_rect = text_surface.get_rect(center=center)
+    screen.blit(text_surface, text_rect)
 
 
 def wrap_text(text, font, max_width):
