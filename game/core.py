@@ -99,9 +99,11 @@ class OthelloGame:
             # Flip opponent pieces in all directions
             for dr, dc in DIRECTIONS:
                 self._flip_pieces(row, col, dr, dc, stone)
-            self.status_message = f"API result: {STONE_TO_TEXT.get(stone, '-')}"
+            self.status_message = f"{self.player_name(owner)} placed {STONE_TO_TEXT.get(stone, '-')}"
         else:
-            self.status_message = f"Cannot flip due to API result: {STONE_TO_TEXT.get(stone, '-')}"
+            self.status_message = (
+                f"{self.player_name(owner)} placed {STONE_TO_TEXT.get(stone, '-')}, but nothing flipped"
+            )
         if self.last_answer == "maybe":
             # Special events are to happen for MAYBE !!!!!!!!!!!!!!!!!!
             self._apply_maybe_event(row, col, stone)
@@ -212,7 +214,7 @@ class OthelloGame:
         if self.ai_player == self.current_side and self.running:
             delay = random.uniform(0.5, 3.0) # it seems that the AI is thinking about their next action.
             self.ai_ready_time = time.time() + delay
-            self.status_message = f"Opponent is thinking... (API: {self.last_answer.upper()})"
+            self.status_message = "AI is thinking..."
         else:
             self.ai_ready_time = None
 
@@ -262,10 +264,8 @@ class OthelloGame:
             return
         if self.fetching_for == side:
             self.awaiting_api = True
-            self.status_message = f"Waiting for API result for {self.player_name(side)}..."
             return
         self.awaiting_api = True
-        self.status_message = f"Fetching API result for {self.player_name(side)}..."
         if pygame.display.get_init():
             # Update display to show fetching status
             pygame.display.flip()
@@ -319,18 +319,20 @@ class OthelloGame:
         if answer == "maybe":
             self.active_stone = self.current_side
             self.maybe_flash_ticks = 30
-            self.status_message = "MAYBE! Flipping surrounding stones"
+            message = "MAYBE! Flipping surrounding stones"
         elif answer == "yes":
             self.active_stone = YES_STONE
             self.maybe_flash_ticks = 0
-            self.status_message = "API result: YES"
+            message = "YES stone ready"
         elif answer == "no":
             self.active_stone = NO_STONE
             self.maybe_flash_ticks = 0
-            self.status_message = "API result: NO"
+            message = "NO stone ready"
         else:
             self.active_stone = random.choice([YES_STONE, NO_STONE])
-            self.status_message = "API result unclear → random pick"
+            message = "Random stone ready"
+        if self.ai_player != self.current_side:
+            self.status_message = message
         self._show_turn_banner()
         self._prefetch_for_next_player()
 

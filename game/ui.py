@@ -43,13 +43,9 @@ def draw_board(screen, game, font):
     screen.blit(font.render(f"NO : {no_score}", True, TEXT_COLOR), (BOARD_SIZE * CELL_SIZE + 15, 70))
     screen.blit(font.render(f"TURN : {game.player_name(game.current_side)}", True, TEXT_COLOR), (BOARD_SIZE * CELL_SIZE + 15, 120))
     screen.blit(font.render(f"STONE: {STONE_TO_TEXT.get(game.active_stone, '-')}", True, TEXT_COLOR), (BOARD_SIZE * CELL_SIZE + 15, 160))
-    screen.blit(font.render(f"API  : {game.last_answer.upper()}", True, TEXT_COLOR), (BOARD_SIZE * CELL_SIZE + 15, 200))
 
     for idx, line in enumerate(wrap_text(game.status_message, font, INFO_WIDTH - 30)):
         screen.blit(font.render(line, True, TEXT_COLOR), (BOARD_SIZE * CELL_SIZE + 15, 250 + idx * 28))
-    if game.awaiting_api:
-        # Indicate waiting for API
-        screen.blit(font.render("Fetching result...", True, TEXT_COLOR), (BOARD_SIZE * CELL_SIZE + 15, 340))
     if game.maybe_flash_ticks > 0:
         # Flash overlay to indicate recent change
         overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
